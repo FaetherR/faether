@@ -64,50 +64,65 @@ unordered_map<string, int> table = {
 };
 
 // Node of a parse tree
-struct Node{
-    int data;
-	Node* left = NULL;
-	Node* right = NULL;
+struct TreeNode{
+	int data;
+	TreeNode* left = NULL;
+	TreeNode* right = NULL;
 
-	Node(int new_data){
+	TreeNode(int new_data){
 		data = new_data;
 	}
 
-	Node(int new_data, Node* new_right){
+	TreeNode(int new_data, TreeNode* new_right){
 		data = new_data;
 		right = new_right;
 	}
 
-	Node(int new_data, Node* new_right, Node* new_left){
+	TreeNode(int new_data, TreeNode* new_right, TreeNode* new_left){
 		data = new_data;
 		right = new_right;
 		left = new_left;
 	}
 
-	~Node(){
+	~TreeNode(){
 		delete left;
 		delete right;
 	}
 };
 
+// Tree Node that stores constant values
+struct DataNode : TreeNode{
+	double number;
+
+	DataNode(int data, double new_number)
+	: TreeNode(data){
+		number = new_number;
+	}
+};
+
 // Stack node
 struct StackNode{
-	Node* node;
+	TreeNode* node;
 	StackNode* next = NULL;
 
 	StackNode(int data, StackNode* previous){
 		next = previous;
-		node = new Node(data);
+		node = new TreeNode(data);
+	}
+
+	StackNode(int data, double number, StackNode* previous){
+		next = previous;
+		node = new DataNode(data, number);
 	}
 
 	StackNode(int data, StackNode* right, StackNode* previous){
 		next = previous;
-		node = new Node(data, right -> node);
+		node = new TreeNode(data, right -> node);
 	}
 
 	StackNode(int data, StackNode* right, StackNode* left, StackNode* previous){
 		next = previous;
-		node = new Node(data, right -> node, left -> node);
+		node = new TreeNode(data, right -> node, left -> node);
 	}
 
 	~StackNode(){
@@ -122,8 +137,9 @@ class Stack{
 
 	public:
 		void push(int data);
+		void push(double data);
 		StackNode* pop();
-		Node* getNode();
+		TreeNode* getNode();
 		void Clear();
 };
 
@@ -132,11 +148,11 @@ void Stack::Clear(){
 	top = NULL;
 }
 
-Node* Stack::getNode(){
+TreeNode* Stack::getNode(){
 	return top -> node;
 }
 
-// Organizes values into parse tree
+// Organizes values into a parse tree
 void Stack::push(int data){
 	if(data < 128){
 		if(data < 0){
@@ -149,6 +165,10 @@ void Stack::push(int data){
 	}
 }
 
+void Stack::push(double data){
+	top = new StackNode(129, data, top);
+}
+
 StackNode* Stack::pop(){
 	StackNode* temp = top;
 	top = top -> next;
@@ -159,11 +179,9 @@ enum types { DELIMITER = 1, VARIABLE, NUMBER, FUNCTION };
 class parser {
 	char *exp_ptr; // points to the expression
 	char token[256]; // holds current token
-	double constants[256] = {};// stores constants
-	unsigned int index_const = 0;// gives constant its index
 	char tok_type; // holds token's type
 	double x; // holds variable value
-	double rev(Node* node);
+	double rev(TreeNode* node);
 	void parse2();
 	void parse3();
 	void parse4();
@@ -174,7 +192,7 @@ class parser {
 	public:
 		Stack stack;
 		parser();
-		Node* parse(char*);
+		TreeNode* parse(char*);
 		double evaluate(double);
 		double evaluate(char*);
 };
@@ -182,13 +200,12 @@ class parser {
 // Parser constructor.
 parser::parser()
 {
-	int i;
 	exp_ptr = NULL;
 	x = 0.0;
 }
 
 // Parser entry point.
-Node* parser::parse(char *exp)
+TreeNode* parser::parse(char *exp)
 {
 	stack.Clear();
 	exp_ptr = exp;
@@ -278,8 +295,7 @@ void parser::parse6()
 	else if(tok_type == VARIABLE){
 		stack.push(128);
 	}else{
-		constants[index_const] = atof(token);
-		stack.push(129 + index_const++);
+		stack.push(atof(token));
 	}
 	get_token();
 }
@@ -297,9 +313,9 @@ double parser::evaluate(char* exp){
 }
 
 // Recursive evaluation loop
-double parser::rev(Node* node){
+double parser::rev(TreeNode* node){
 	if(node == NULL) return 0;
-	else if(node -> data > 128) return constants[node -> data - 129];
+	else if(node -> data == 129) return ((DataNode*)node) -> number;
 	else if(node -> data == 128) return x;
 	else if(node -> data == -1) return rev(node -> left) + rev(node -> right);
 	else if(node -> data == -2) return rev(node -> left) - rev(node -> right);

@@ -14,7 +14,7 @@ EXP, SQRT, CBRT, ROUND, FLOOR, CEIL.
 
 mathparser version 1.0 by Hamid Soltani. (gmail: hsoltanim)
 Last modified: Aug. 2016.
-mathparser version 1.1.1 by Faether.
+mathparser version 1.1.2 by Faether.
 Last modified: June 2023.
 
 *******************************************************************/
